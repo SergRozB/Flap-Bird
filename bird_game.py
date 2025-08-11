@@ -1,7 +1,7 @@
 import pygame
 import time
-import map_maker
-import camera
+import map_maker_bird as map_maker
+import camera_bird as camera
 import backrooms
 
 run = True
@@ -16,7 +16,7 @@ max_x = map_maker.max_x # Maximum x value the bird can travel to
 ########## CLASSES ##########
 
 class move_object(pygame.sprite.Sprite):
-    def __init__(self, starting_pos, image_path="SpriteImages\Default.png", size=0.05):
+    def __init__(self, starting_pos, image_path="flap bird\SpriteImages\Default.png", size=0.05):
         super().__init__()
         self.pos = pygame.math.Vector2(starting_pos[0], starting_pos[1])
         self.image = pygame.transform.rotozoom(
@@ -117,7 +117,7 @@ class move_object(pygame.sprite.Sprite):
 
 class bird(move_object):
     def __init__(self, startingPos):
-        super().__init__(startingPos, "SpriteImages/bird_sprite.png", 1)
+        super().__init__(startingPos, "flap bird\SpriteImages/bird_sprite.png", 1)
         self.hitbox_rect.scale_by(0.9, 0.9)
         self.jump_time = 0
         self.move_x_val = 50 
@@ -211,7 +211,7 @@ while run:
                     (drawnRect.x-camera.offset.x, drawnRect.y-camera.offset.y))
     update_sprites(live_sprites)
     if player_bird.touched_bottom:
-        # Here run backrooms game
+        backrooms.backrooms_game()
         run = False
     pygame.display.update()
 pygame.quit()
