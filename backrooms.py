@@ -13,6 +13,13 @@ dt = 0
 last_time = 0
 black = (0, 0, 0)
 
+########## SFX ##########
+pygame.mixer.init()
+pygame.mixer.music.load("Sounds/light_hum.wav")
+pygame.mixer.music.set_volume(0.3)
+walking_sound = pygame.mixer.Sound("Sounds/carpet_footsteps_walking.wav")
+walking_sound.set_volume(0.4)
+
 ##########  CLASSES  ##########
 
 class move_object(pygame.sprite.Sprite):
@@ -104,12 +111,20 @@ class bird(move_object):
         super().__init__(startingPos, "SpriteImages/bird_top_down.png", 1)
         self.hitbox_rect.width = 16
         self.hitbox_rect.height = 16
-        self.speed = 200
+        self.speed = 100
+        self.playing_walking_sound = False
 
     def update(self):
         self.check_controls()
         super().update()
         self.rotate_to_mouse()
+        if self.direction.length() > 0:
+            if not self.playing_walking_sound:
+                walking_sound.play(-1)
+                self.playing_walking_sound = True
+        elif self.playing_walking_sound:
+            walking_sound.stop()
+            self.playing_walking_sound = False
 
     def check_controls(self):
         keys = pygame.key.get_pressed()
@@ -134,6 +149,8 @@ class bird(move_object):
         x = self.hitbox_rect.centerx 
         y = self.hitbox_rect.centery 
         Mx, My = pygame.mouse.get_pos()
+        Mx /= camera.zoom_level
+        My /= camera.zoom_level
         xDist = (Mx - x) + camera.offset.x 
         yDist = (My - y) + camera.offset.y 
         self.lookDirection = pygame.math.Vector2(xDist, yDist)
@@ -144,12 +161,33 @@ class bird(move_object):
         #startPosX = (self.hitbox_rect.centerx - camera.offset.x) * zoomLevel
         #startPosY = (self.hitbox_rect.centery - camera.offset.y) * zoomLevel
         #pygame.draw.line(screen, "green", (startPosX, startPosY), (startPosX + self.lookDirection.x * 20, startPosY + self.lookDirection.y * 20)) 
+        
 
 ########### FUNCTIONS ###########
 
 def update_sprites(sprite_group):
     for sprite in sprite_group:
         sprite.update()
+
+def is_on_screen(position):
+    screenPosX = position[0] 
+    screenPosY = position[1] 
+    #print("offset:", (camera.offset.x, camera.offset.y))
+    screenWLimit = (screenW/camera.zoom_level) + camera.offset.x 
+    screenHLimit = (screenH/camera.zoom_level) + camera.offset.y 
+    if (screenPosX <= screenWLimit and screenPosX >= (screenWLimit-screenW)) and (screenPosY <= screenHLimit and screenPosY >= (screenHLimit-screenH)):
+        return True
+    else:
+        return False
+
+def draw_sprites(sprite_group, screen, offset, zoom_level):
+    for sprite in sprite_group:
+        if is_on_screen(sprite.pos):
+            drawn_rect = sprite.rect.copy()
+            drawn_rect.width = sprite.rect.width * zoom_level
+            drawn_rect.height = sprite.rect.height * zoom_level
+            screen.blit(pygame.transform.scale(sprite.image, (sprite.image.get_rect().w*zoom_level, sprite.image.get_rect().h*zoom_level)), 
+                        ((drawn_rect.x - offset.x)*zoom_level, (drawn_rect.y - offset.y)*zoom_level))
 
 ########## INITIALIZATIONS ##########
 
@@ -171,7 +209,7 @@ for floor_sprite in floor_list:
 
 player.define_collision_list(collision_list)
 clock = pygame.time.Clock()
-
+pygame.mixer.music.play(-1)
 ########## MAIN LOOP ##########
 
 def backrooms_game(screen):
@@ -185,17 +223,11 @@ def backrooms_game(screen):
             if event.type == pygame.QUIT:
                 run = False
         camera.scroll()
-        for sprite in floor_sprites:
-            drawn_rect = sprite.rect.copy()
-            screen.blit(pygame.transform.scale(sprite.image, (sprite.image.get_rect().w, sprite.image.get_rect().h)), 
-                        (drawn_rect.x-camera.offset.x, drawn_rect.y-camera.offset.y))
-        for sprite in all_sprites:
-            drawn_rect = sprite.rect.copy()
-            screen.blit(pygame.transform.scale(sprite.image, (sprite.image.get_rect().w, sprite.image.get_rect().h)), 
-                        (drawn_rect.x-camera.offset.x, drawn_rect.y-camera.offset.y))
+        draw_sprites(floor_sprites, screen, camera.offset, camera.zoom_level)
+        draw_sprites(all_sprites, screen, camera.offset, camera.zoom_level)
         player_rect = player.rect.copy()
-        screen.blit(pygame.transform.scale(player.image, (player.image.get_rect().w, player.image.get_rect().h)), 
-                        (player_rect.x-camera.offset.x, player_rect.y-camera.offset.y))
+        screen.blit(pygame.transform.scale(player.image, (player.image.get_rect().w*camera.zoom_level, player.image.get_rect().h*camera.zoom_level)), 
+                        ((player_rect.x-camera.offset.x)*camera.zoom_level, (player_rect.y-camera.offset.y)*camera.zoom_level))
         update_sprites(live_sprites)
         pygame.display.update()
 

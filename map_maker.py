@@ -1,25 +1,27 @@
 import pygame
 
 map = """\
-                        W         W         W         W         W         W         W         W          
-          WW        WWWWWW        W         W         W         W         W         W         W          
-          WW            W         W                   W         W         W         W         W          
-          WW            W         W                             W         W         W         W          
-                        W         W                                       W         W         W         W
-                                  W                                       W         W         W         W
-                                  W         W                             W                   W         W
-                                  W         W         W                   W                   W         W
-                                  W         W         W         W                             W         W
-                        W         W         W         W         W                             W         W
-                        W                   W         W         W                   W         W         W
-                        W                   W         W         W                   W         W         W
-                        W                   W         W         W         W         W         W         W
-                        W                   W         W         W         W         W         W         W
-                        W         W         W         W         W         W         W                   W
-                        W         W         W         W         W         W         W                   W
-                        W         W         W         W         W         W         W                   W
-                        W         W         W         W         W         W         W                   W
-                        W         W         W         W         W         W         W         W         W
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+W                       W         W         W         W         W         W         W         W         WW
+W         WW        WWWWWW        W         W         W         W         W         W         W         WW
+W         WW            W         W                   W         W         W         W         W         WW
+W         WW            W         W                             W         W         W         W         WW
+W                       W         W                                       W         W         W         WW
+W                                 W                                       W         W         W         WW
+W                                 W         W                             W                   W         WW
+W                                 W         W         W                   W                   W         WW
+W                                 W         W         W         W                             W         WW
+W                       WWWWWWWWWWW         W         W         W                             W         WW
+W                       W                   W         W         W                   W         W         WW
+W                       W                   W         W         W                   W         W         WW
+W                       W         W         W         W         W         W         W         W         WW
+W                                 W         W         W         W         W         W         W         WW
+W                                 W         W         W         W         W         W                   WW
+W                       W         W         W         W         W         W         W                   WW
+W                       W         W         W         W         W         W         W                   WW
+W                       W         W         W         W         W         W         W                   WW
+W                       W         W         W         W         W         W         W         W         WW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 """
 
 
