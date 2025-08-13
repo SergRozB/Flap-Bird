@@ -12,11 +12,9 @@ screen = pygame.display.set_mode([screenW, screenH])
 dt = 0
 last_time = 0
 black = (0, 0, 0)
+player_spawn_point = (0, 0)
 
 ########## SFX ##########
-pygame.mixer.init()
-pygame.mixer.music.load("Sounds/light_hum.wav")
-pygame.mixer.music.set_volume(0.3)
 walking_sound = pygame.mixer.Sound("Sounds/carpet_footsteps_walking.wav")
 walking_sound.set_volume(0.4)
 
@@ -190,8 +188,8 @@ def draw_sprites(sprite_group, screen, offset, zoom_level):
                         ((drawn_rect.x - offset.x)*zoom_level, (drawn_rect.y - offset.y)*zoom_level))
 
 ########## INITIALIZATIONS ##########
-
-player = bird((screenW/2, screenH/2))
+wall_list, floor_list, player_spawn_point = map_maker.create_map(map_maker.map)
+player = bird(player_spawn_point)
 camera = camera_script.camera(player, (screenW, screenH))
 
 live_sprites = pygame.sprite.Group()
@@ -200,7 +198,6 @@ all_sprites = pygame.sprite.Group()
 floor_sprites = pygame.sprite.Group()
 collision_list = pygame.sprite.Group()
 
-wall_list, floor_list = map_maker.create_map(map_maker.map)
 for wall_sprite in wall_list:
     all_sprites.add(wall_sprite)
     collision_list.add(wall_sprite)
@@ -209,11 +206,14 @@ for floor_sprite in floor_list:
 
 player.define_collision_list(collision_list)
 clock = pygame.time.Clock()
-pygame.mixer.music.play(-1)
 ########## MAIN LOOP ##########
 
 def backrooms_game(screen):
     global run, dt, last_time, camera, live_sprites, all_sprites
+    pygame.mixer.init()
+    pygame.mixer.music.load("Sounds/light_hum.wav")
+    pygame.mixer.music.set_volume(0.3)
+    pygame.mixer.music.play(-1)
     while run:
         clock.tick(60)
         dt = time.time() - last_time
