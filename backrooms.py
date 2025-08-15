@@ -17,15 +17,16 @@ player_spawn_point = (0, 0)
 ########## SFX ##########
 walking_sound = pygame.mixer.Sound("Sounds/carpet_footsteps_walking.wav")
 walking_sound.set_volume(0.4)
+running_sound = pygame.mixer.Sound("Sounds/carpet_footsteps_running.wav")
+running_sound.set_volume(0.4)
 
 ##########  CLASSES  ##########
 
 class move_object(pygame.sprite.Sprite):
-    def __init__(self, starting_pos, image_path="SpriteImages\Default.png", size=0.05):
+    def __init__(self, starting_pos, image_path="SpriteImages/Default.png"):
         super().__init__()
         self.pos = pygame.math.Vector2(starting_pos[0], starting_pos[1])
-        self.image = pygame.transform.rotozoom(
-            pygame.image.load(image_path).convert_alpha(), 0, size)
+        self.image = pygame.image.load(image_path).convert_alpha()
         self.base_image = self.image
         self.hitbox_rect = self.base_image.get_rect(center = self.pos)
         self.rect = self.hitbox_rect.copy()
@@ -106,23 +107,37 @@ class move_object(pygame.sprite.Sprite):
 
 class bird(move_object):
     def __init__(self, startingPos):
-        super().__init__(startingPos, "SpriteImages/bird_top_down.png", 1)
+        super().__init__(startingPos, "SpriteImages/bird_top_down.png")
         self.hitbox_rect.width = 16
         self.hitbox_rect.height = 16
         self.speed = 100
         self.playing_walking_sound = False
+        self.playing_running_sound = False
+        self.is_walking = False
+        self.is_running = False
 
     def update(self):
         self.check_controls()
         super().update()
         self.rotate_to_mouse()
-        if self.direction.length() > 0:
+        self.sound_manager()
+        
+    def sound_manager(self):
+        """Manages the sound effects for the player."""
+        if self.is_walking:
             if not self.playing_walking_sound:
                 walking_sound.play(-1)
                 self.playing_walking_sound = True
         elif self.playing_walking_sound:
             walking_sound.stop()
             self.playing_walking_sound = False
+        if self.is_running:
+            if not self.playing_running_sound:
+                running_sound.play(-1)
+                self.playing_running_sound = True
+        elif self.playing_running_sound:
+            running_sound.stop()
+            self.playing_running_sound = False
 
     def check_controls(self):
         keys = pygame.key.get_pressed()
@@ -131,16 +146,27 @@ class bird(move_object):
 
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.direction.x = -1
+            self.is_walking = True
 
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             self.direction.x = 1
+            self.is_walking = True
 
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             self.direction.y = -1
+            self.is_walking = True
  
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.direction.y = 1
+            self.is_walking = True
         
+        if keys[pygame.K_LSHIFT]:
+            self.speed = 200
+            self.is_running = True
+            self.is_walking = False
+        else:
+            self.speed = 100
+            self.is_running = False
         self.direction = self.direction.normalize() if self.direction.length() > 0 else pygame.math.Vector2(0, 0)
     
     def rotate_to_mouse(self):
@@ -180,7 +206,14 @@ def is_on_screen(position):
 
 def draw_sprites(sprite_group, screen, offset, zoom_level):
     for sprite in sprite_group:
-        if is_on_screen(sprite.pos):
+        if sprite not in object_list:
+            if is_on_screen(sprite.pos):
+                drawn_rect = sprite.rect.copy()
+                drawn_rect.width = sprite.rect.width * zoom_level
+                drawn_rect.height = sprite.rect.height * zoom_level
+                screen.blit(pygame.transform.scale(sprite.image, (sprite.image.get_rect().w*zoom_level, sprite.image.get_rect().h*zoom_level)), 
+                            ((drawn_rect.x - offset.x)*zoom_level, (drawn_rect.y - offset.y)*zoom_level))
+        else:
             drawn_rect = sprite.rect.copy()
             drawn_rect.width = sprite.rect.width * zoom_level
             drawn_rect.height = sprite.rect.height * zoom_level
@@ -188,7 +221,7 @@ def draw_sprites(sprite_group, screen, offset, zoom_level):
                         ((drawn_rect.x - offset.x)*zoom_level, (drawn_rect.y - offset.y)*zoom_level))
 
 ########## INITIALIZATIONS ##########
-wall_list, floor_list, player_spawn_point = map_maker.create_map(map_maker.map_img)
+wall_list, floor_list, object_list, player_spawn_point = map_maker.create_map(map_maker.map_img)
 player = bird(player_spawn_point)
 camera = camera_script.camera(player, (screenW, screenH))
 
@@ -197,14 +230,20 @@ live_sprites.add(player)
 all_sprites = pygame.sprite.Group()
 floor_sprites = pygame.sprite.Group()
 collision_list = pygame.sprite.Group()
+top_layer = pygame.sprite.Group()
 
 for wall_sprite in wall_list:
     all_sprites.add(wall_sprite)
     collision_list.add(wall_sprite)
 for floor_sprite in floor_list:
     floor_sprites.add(floor_sprite)
+for object_sprite in object_list:
+    top_layer.add(object_sprite)
+    if object_sprite.can_collide:
+        collision_list.add(object_sprite)
 
 player.define_collision_list(collision_list)
+top_layer.add(player)
 clock = pygame.time.Clock()
 ########## MAIN LOOP ##########
 
@@ -225,9 +264,7 @@ def backrooms_game(screen):
         camera.scroll()
         draw_sprites(floor_sprites, screen, camera.offset, camera.zoom_level)
         draw_sprites(all_sprites, screen, camera.offset, camera.zoom_level)
-        player_rect = player.rect.copy()
-        screen.blit(pygame.transform.scale(player.image, (player.image.get_rect().w*camera.zoom_level, player.image.get_rect().h*camera.zoom_level)), 
-                        ((player_rect.x-camera.offset.x)*camera.zoom_level, (player_rect.y-camera.offset.y)*camera.zoom_level))
+        draw_sprites(top_layer, screen, camera.offset, camera.zoom_level)
         update_sprites(live_sprites)
         pygame.display.update()
 
