@@ -1,5 +1,6 @@
 import pygame
-
+from PIL import Image
+map_img = Image.open("SpriteImages/map_img.png")
 map = """\
 WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 W                       W         W         W         W         W         W         W         W         W
@@ -23,10 +24,16 @@ W                       W         W         W         W         W         W     
 W                       W         W         W         W         W         W         W         W         W
 WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 """
+black = (0, 0, 0, 255)
+white = (255, 255, 255, 255)
+grey = (105, 105, 105, 255)
+blue = (91, 110, 225, 255)
 
 map = open("map.txt", "r").readlines()
 for n in range(len(map)):
     map[n] = map[n].rstrip("\n")
+
+
 
 #map = map.splitlines()
 
@@ -62,9 +69,22 @@ class floor(pygame.sprite.Sprite):
         self.old_rect = self.hitbox_rect.copy()
 
 
-def wall_sprite_manager(wall_list, map_list):
+class any_object(pygame.sprite.Sprite):
+    def __init__(self, starting_pos, image_path="SpriteImages/Default.png", has_collisions=True):
+        super().__init__()
+        self.pos = pygame.math.Vector2(starting_pos[0], starting_pos[1])
+        self.image = pygame.transform.rotozoom(
+            pygame.image.load(image_path).convert_alpha(), 0, 1)
+        self.base_image = self.image
+        self.hitbox_rect = self.base_image.get_rect(center=self.pos)
+        self.rect = self.hitbox_rect.copy()
+        self.old_rect = self.hitbox_rect.copy()
+        self.can_collide = has_collisions
+
+
+def wall_sprite_manager(wall_list, map_list, width, height):
     for wall_sprite in wall_list:
-        neighbours_list = get_wall_neighbours(map_list, wall_sprite.map_pos)
+        neighbours_list = get_wall_neighbours(map_list, wall_sprite.map_pos, width, height)
         #print("Neighbours for", wall_sprite.map_pos, ": \n", neighbours_list[:3], "\n", neighbours_list[3:6], "\n", neighbours_list[6:9])
         dict_neighbours_all_dir = {
             (0, 1, 0, 
@@ -249,8 +269,8 @@ def wall_sprite_manager(wall_list, map_list):
             wall_sprite.change_image("SpriteImages/wall_corner.png", 180)
         """
 
-def get_wall_neighbours(map_list, map_pos):
-    char_list = ["W", "B"]
+def get_wall_neighbours(map_list, map_pos, width, height):
+    colour_list = [black]
     top_left = (map_pos[0] - 1, map_pos[1] - 1)
     top = (map_pos[0], map_pos[1] - 1)
     top_right = (map_pos[0] + 1, map_pos[1] - 1)
@@ -260,56 +280,56 @@ def get_wall_neighbours(map_list, map_pos):
     bottom = (map_pos[0], map_pos[1] + 1)
     bottom_right = (map_pos[0] + 1, map_pos[1] + 1)
     if map_pos[0] > 0 and map_pos[1] > 0:
-        if map_list[top_left[1]][top_left[0]] in char_list:
+        if map_list[top_left[1]][top_left[0]] in colour_list:
             top_left = 1
         else:
             top_left = 0
     else:
         top_left = 0
     if map_pos[1] > 0:
-        if map_list[top[1]][top[0]] in char_list:
+        if map_list[top[1]][top[0]] in colour_list:
             top = 1  
         else:
             top = 0  
     else:
         top = 0
-    if map_pos[0] < len(map_list[0]) - 1 and map_pos[1] > 0:
-        if map_list[top_right[1]][top_right[0]] in char_list:
+    if map_pos[0] < width - 1 and map_pos[1] > 0:
+        if map_list[top_right[1]][top_right[0]] in colour_list:
             top_right = 1
         else:
             top_right = 0
     else:
         top_right = 0
     if map_pos[0] > 0:
-        if map_list[left[1]][left[0]] in char_list:
+        if map_list[left[1]][left[0]] in colour_list:
             left = 1
         else:
             left = 0
     else:
         left = 0
-    if map_pos[0] < len(map_list[0]) - 1:
-        if map_list[right[1]][right[0]] in char_list:
+    if map_pos[0] < width - 1:
+        if map_list[right[1]][right[0]] in colour_list:
             right = 1
         else:
             right = 0
     else:
         right = 0
-    if map_pos[0] > 0 and map_pos[1] < len(map_list) - 1:
-        if map_list[bottom_left[1]][bottom_left[0]] in char_list:
+    if map_pos[0] > 0 and map_pos[1] < height - 1:
+        if map_list[bottom_left[1]][bottom_left[0]] in colour_list:
             bottom_left = 1
         else:
             bottom_left = 0
     else:
         bottom_left = 0
-    if map_pos[1] < len(map_list) - 1:
-        if map_list[bottom[1]][bottom[0]] in char_list:
+    if map_pos[1] < height - 1:
+        if map_list[bottom[1]][bottom[0]] in colour_list:
             bottom = 1
         else:
             bottom = 0
     else:
         bottom = 0
-    if map_pos[0] < len(map_list[0]) - 1 and map_pos[1] < len(map_list) - 1:
-        if map_list[bottom_right[1]][bottom_right[0]] in char_list:
+    if map_pos[0] < width - 1 and map_pos[1] < height - 1:
+        if map_list[bottom_right[1]][bottom_right[0]] in colour_list:
             bottom_right = 1
         else:
             bottom_right = 0
@@ -317,16 +337,18 @@ def get_wall_neighbours(map_list, map_pos):
         bottom_right = 0
     return (top_left, top, top_right, left, 1, right, bottom_left, bottom, bottom_right)
 
-def create_map(map):
+def create_map(map_img):
     wall_list = []
     floor_list = []
     offset = 32
     map_list = []
+    width, height = map_img.size
     map_floor_corners_dict = {
         (0, 0): ("SpriteImages/quarter_floor.png", 0),
-        (0, len(map)-1): ("SpriteImages/quarter_floor.png", 90)
+        (0, height-1): ("SpriteImages/quarter_floor.png", 90)
     }
     spawn_point = (0, 0)
+    """
     for y, line in enumerate(map):
         map_list.append([])
         for x, character in enumerate(line):
@@ -354,5 +376,39 @@ def create_map(map):
                 wall_list.append(wall((x*offset, y*offset), (x, y)))
             if character == "O":
                 spawn_point = (x*offset, y*offset)
-    wall_sprite_manager(wall_list, map_list)
+    """
+    for y in range(height):
+        map_list.append([])
+        for x in range(width):
+            colour = map_img.getpixel((x, y))
+            map_floor_corners_dict[(width - 1, 0)] = ("SpriteImages/quarter_floor.png", 270)
+            map_floor_corners_dict[(width - 1, height - 1)] = ("SpriteImages/quarter_floor.png", 180)
+            map_list[-1].append(colour)
+            if colour == black:
+                wall_list.append(wall((x*offset, y*offset), (x, y)))
+                floor_list.append(floor((x*offset, y*offset)))
+            elif colour == blue:
+                spawn_point = (x*offset, y*offset)
+                floor_list.append(floor((x*offset, y*offset)))
+            elif colour == white:
+                floor_list.append(floor((x*offset, y*offset)))
+            if colour != (0, 0, 0, 0):
+                if colour != grey:
+                    if x != 0 and x != width - 1 and y != 0 and y != height - 1:
+                        floor_list.append(floor((x*offset, y*offset)))
+                    elif x == 0 and y != 0 and y != height - 1:
+                        floor_list.append(floor((x*offset, y*offset), "SpriteImages/half_floor_1.png", rotation=90))
+                    elif x == width - 1 and y != 0 and y != height - 1:
+                        floor_list.append(floor((x*offset, y*offset), "SpriteImages/half_floor_1.png", rotation=270))
+                    elif y == 0 and x != 0 and x != width - 1:
+                        floor_list.append(floor((x*offset, y*offset), "SpriteImages/half_floor_1.png", rotation=0))
+                    elif y == height - 1 and x != 0 and x != width - 1:
+                        floor_list.append(floor((x*offset, y*offset), "SpriteImages/half_floor_1.png", rotation=180))
+                    else:
+                        if (x, y) in map_floor_corners_dict.keys():
+                            image_path, rotation = map_floor_corners_dict[(x, y)]
+                            floor_list.append(floor((x*offset, y*offset), image_path, rotation))
+                else:
+                    floor_list.append(floor((x*offset, y*offset), "SpriteImages/wall_surrounded.png"))
+    wall_sprite_manager(wall_list, map_list, width, height)
     return wall_list, floor_list, spawn_point

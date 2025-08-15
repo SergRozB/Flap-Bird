@@ -188,7 +188,7 @@ def draw_sprites(sprite_group, screen, offset, zoom_level):
                         ((drawn_rect.x - offset.x)*zoom_level, (drawn_rect.y - offset.y)*zoom_level))
 
 ########## INITIALIZATIONS ##########
-wall_list, floor_list, player_spawn_point = map_maker.create_map(map_maker.map)
+wall_list, floor_list, player_spawn_point = map_maker.create_map(map_maker.map_img)
 player = bird(player_spawn_point)
 camera = camera_script.camera(player, (screenW, screenH))
 
