@@ -13,12 +13,20 @@ dt = 0
 last_time = 0
 black = (0, 0, 0)
 player_spawn_point = (0, 0)
+light_hum_volume = 0.3
+tv_static_volume = 0.4
 
 ########## SFX ##########
-walking_sound = pygame.mixer.Sound("Sounds/carpet_footsteps_walking.wav")
-walking_sound.set_volume(0.4)
-running_sound = pygame.mixer.Sound("Sounds/carpet_footsteps_running.wav")
-running_sound.set_volume(0.4)
+walking_sound_carpet = pygame.mixer.Sound("Sounds/carpet_footsteps_walking.wav")
+walking_sound_carpet.set_volume(0.4)
+running_sound_carpet = pygame.mixer.Sound("Sounds/carpet_footsteps_running.wav")
+running_sound_carpet.set_volume(0.4)
+walking_sound_tiles = pygame.mixer.Sound("Sounds/dark_tile_footsteps_walking.wav")
+walking_sound_tiles.set_volume(0.4)
+running_sound_tiles = pygame.mixer.Sound("Sounds/dark_tile_footsteps_running.wav")
+running_sound_tiles.set_volume(0.5)
+tv_static_sound = pygame.mixer.Sound("Sounds/tv_static.wav")
+tv_static_sound.set_volume(tv_static_volume)
 
 ##########  CLASSES  ##########
 
@@ -124,6 +132,30 @@ class bird(move_object):
         
     def sound_manager(self):
         """Manages the sound effects for the player."""
+        if self.pos.x < map_maker.danger_section_start_pos[0]:
+            if walking_sound_tiles.get_num_channels() > 0:
+                walking_sound_tiles.stop()
+                walking_sound = walking_sound_carpet
+                walking_sound.play(-1)
+            elif running_sound_tiles.get_num_channels() > 0:
+                running_sound_tiles.stop()
+                running_sound = running_sound_carpet
+                running_sound.play(-1)
+            else:
+                walking_sound = walking_sound_carpet
+                running_sound = running_sound_carpet
+        else:
+            if walking_sound_carpet.get_num_channels() > 0:
+                walking_sound_carpet.stop()
+                walking_sound = walking_sound_tiles
+                walking_sound.play(-1)
+            if running_sound_carpet.get_num_channels() > 0:
+                running_sound_carpet.stop()
+                running_sound = running_sound_tiles
+                running_sound.play(-1)
+            else:
+                walking_sound = walking_sound_tiles
+                running_sound = running_sound_tiles
         if self.is_walking:
             if not self.playing_walking_sound:
                 walking_sound.play(-1)
@@ -162,12 +194,16 @@ class bird(move_object):
         
         if keys[pygame.K_LSHIFT]:
             self.speed = 200
-            self.is_running = True
+            if self.direction.length() > 0:
+                self.is_running = True
             self.is_walking = False
         else:
             self.speed = 100
             self.is_running = False
-        self.direction = self.direction.normalize() if self.direction.length() > 0 else pygame.math.Vector2(0, 0)
+        self.direction = self.direction.normalize() if self.direction.length() > 0 else pygame.math.Vector2(0, 0) 
+        if self.direction.length() == 0:
+            self.is_walking = False
+            self.is_running = False
     
     def rotate_to_mouse(self):
         x = self.hitbox_rect.centerx 
@@ -220,6 +256,26 @@ def draw_sprites(sprite_group, screen, offset, zoom_level):
             screen.blit(pygame.transform.scale(sprite.image, (sprite.image.get_rect().w*zoom_level, sprite.image.get_rect().h*zoom_level)), 
                         ((drawn_rect.x - offset.x)*zoom_level, (drawn_rect.y - offset.y)*zoom_level))
 
+def reduce_lights_volume():
+    """Reduces the volume of the lights hum sound when the player enters the dangerous section according
+    to the player distance from the entrance to the section."""
+    if player.pos.x >= map_maker.danger_section_start_pos[0]:
+        max_distance = 550
+        distance_to_start = pygame.Vector2.distance_to(player.pos, map_maker.danger_section_start_pos)
+        if distance_to_start < max_distance:
+            volume = (1 - (distance_to_start / max_distance)) * light_hum_volume
+            pygame.mixer.music.set_volume(volume)
+
+def reduce_tv_static_volume():
+    """Reduces the volume of the TV static sound when the player is far from the TV static object."""
+    global tv_static_sound
+    if player.pos.x >= map_maker.danger_section_start_pos[0]:
+        max_distance = 350
+        distance_to_tv = pygame.Vector2.distance_to(player.pos, map_maker.tv_static_pos)
+        if distance_to_tv < max_distance:
+            volume = (1 - (distance_to_tv / max_distance)) * tv_static_volume
+            tv_static_sound.set_volume(volume)
+
 ########## INITIALIZATIONS ##########
 wall_list, floor_list, object_list, player_spawn_point = map_maker.create_map(map_maker.map_img)
 player = bird(player_spawn_point)
@@ -248,11 +304,12 @@ clock = pygame.time.Clock()
 ########## MAIN LOOP ##########
 
 def backrooms_game(screen):
-    global run, dt, last_time, camera, live_sprites, all_sprites
+    global run, dt, last_time, camera, live_sprites, all_sprites, light_hum_volume
     pygame.mixer.init()
     pygame.mixer.music.load("Sounds/light_hum.wav")
-    pygame.mixer.music.set_volume(0.3)
+    pygame.mixer.music.set_volume(light_hum_volume)
     pygame.mixer.music.play(-1)
+    tv_static_sound.play(-1)
     while run:
         clock.tick(60)
         dt = time.time() - last_time
@@ -266,6 +323,8 @@ def backrooms_game(screen):
         draw_sprites(all_sprites, screen, camera.offset, camera.zoom_level)
         draw_sprites(top_layer, screen, camera.offset, camera.zoom_level)
         update_sprites(live_sprites)
+        reduce_lights_volume()
+        reduce_tv_static_volume()
         pygame.display.update()
 
 backrooms_game(screen)
